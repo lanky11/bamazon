@@ -28,84 +28,86 @@ function queryAllProducts() {
   connection.query("SELECT * FROM bamazonDB.products", function(err, res) {
     if (err) throw err;
     for (var i=0; i<res.length; i++) {
-      console.log(res[i].item_id + " | " + res[i].product_name  + " | $" + res[i].price);
+      console.log(res[i].item_id + " | " + res[i].product_name  + " | $" + res[i].price + " | Stock " + res[i].stock_quantity);
     }
-    promptUser();
+    promptUser(res);
   });
 }
 
 // function that askes for what product and product quantity
-function promptUser() {
-  //queryAllProducts();
+//==========================================================================================================
+function promptUser(res) {
   inquirer.prompt([
     {
-      name: "productToBuy",
+      name: "productId",
       message: "Please type the ID of the product you would like to buy?",
       type: "input"
     },
     {
-      name: "productQuantity",
+      name: "productQuant",
       type: "input",
       message: "How many would you like?"
-    },
-    {
-      name: "confirm",
-      type: "confirm",
-      message: "Are you sure you want to complete your order?",
-      default: true
     }
   ]).then(function(answer) {
 
-    if (answer.confirm) {
-      // store answers in variables
-      var prodId = answer.productToBuy;
-      var prodQuant = answer.productQuantity;
-      
-      // Once the customer has placed the order, your application should check if your store has enough of the product to meet the customer's request.
-      // However, if your store does have enough of the product, you should fulfill the customer's order.
-      if () {
-        // display to user their total
-        // console.log("");
-        // promptUser);
-      
-        // If not, the app should log a phrase like Insufficient quantity!, and then prevent the order from going through.
-      } else {
-        // if there wasn't enough stock to fill order.
-        // console.log("Insufficient quantity!");
-        // promptUser();
+    // store answers in variables
+    var prodId = answer.productId;
+    var prodQuant = answer.productQuant;
+
+
+    // Check if the store has enough product to fill the order.
+    //==========================================================================================================
+    // connection.query("SELECT stock_quantity FROM bamazonDB.products WHERE ?",
+    // [
+    //   {
+    //     item_id: prodId
+    //   }
+    // ],
+    // function(err, res) {
+    //   if (err) throw err;
+    // });
+    // if (res[0].stock_quantity > prodQuant) {
+    //   console.log("Bamazon has enough stock!");
+    // } else {
+    //   console.log("Insufficient quantity!");
+    //   connection.end();
+    // }
+
+    // Update product quantity in the database
+    //==========================================================================================================
+    connection.query("UPDATE bamazonDB.products SET ? WHERE ?",
+    [
+      {
+        stock_quantity: res[prodId].stock_quantity - prodQuant
+      },
+      {
+        item_id: prodId
       }
+    ],
+    function(err, res) {
+      if (err) throw err;
+    });
 
-      // This means updating the SQL database to reflect the remaining quantity.
-      // Once the update goes through, show the customer the total cost of their purchase.
-
-
-      console.log("Updating stock\n");
-      var query = connection.query("UPDATE bamazonDB.products SET ? WHERE ?",
-        [
-          {
-            stock_quantity: prodQuant
-          },
-          {
-            item_id: prodId
-          }
-        ],
-        function(err, res) {
-          console.log(res.affectedRows + " products updated!\n");
-        }
-      );
+    // Display the total price of the items to the user
+    //==========================================================================================================
+    connection.query("SELECT * FROM bamazonDB.products WHERE ?",
+    [
+      {
+        item_id: prodId
+      }
+    ],
+    function(err, res) {
+      if (err) throw err;
+      console.log("-------------------------------------");
+      console.log("Purchase details:");
+      console.log("Item: " + res[0].product_name);
+      console.log("Quantity: " + prodQuant);
+      console.log("Total: $" + res[0].price * prodQuant);
+      console.log("-------------------------------------");
+    });
     
-      // logs the actual query being run
-      console.log(query.sql);
-      
-    }
-    else {
-      console.log("\nSorry to see you go.  Please shop with us again.\n");
-      connection.end();
-    }
+    connection.end(); 
+    
   });
 }
 
-// function to update the product
-function updateProduct() {
-  
-}
